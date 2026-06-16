@@ -4,10 +4,10 @@ import { Icons } from '../AppData/Icons';
 
 export default function GuestWiFiCard({
 	style = {},
-	width = '450px',
-	height = '180px',
-	borderRadius = 60,
-	borderWidth = 6,
+	width = 'clamp(260px, 32vw, 450px)',
+	height = 'auto',
+	borderRadius = 'clamp(18px, 4vw, 60px)',
+	borderWidth = 'clamp(2px, 0.4vw, 6px)',
 	borderColor = '#3998bd',
 	backgroundColor = 'rgba(0,0,0,0.6)',
 	textColor = '#ffffff',
@@ -35,6 +35,13 @@ export default function GuestWiFiCard({
 				4,
 				7,
 			)}-${cleaned.slice(7)}`;
+		}
+
+		if (cleaned.length === 10) {
+			return `(${cleaned.slice(0, 3)}) ${cleaned.slice(
+				3,
+				6,
+			)}-${cleaned.slice(6)}`;
 		}
 
 		return phoneNumber;
@@ -96,51 +103,85 @@ export default function GuestWiFiCard({
 		<div
 			className='
 				select-none
-				p-5 overflow-hidden
-				shadow-lg flex justify-center
 				relative
+				shadow-lg
+				overflow-hidden
+				flex
+				justify-center
+				items-center
 			'
 			style={{
 				width,
 				height,
-				minWidth: 250,
-				minHeight: 180,
+				minWidth: 0,
+				minHeight: height === 'auto' ? 'clamp(120px, 12vw, 180px)' : undefined,
+				padding: 'clamp(14px, 2vw, 28px)',
 				borderRadius,
 				borderWidth,
 				borderColor,
 				backgroundColor,
 				borderStyle: 'solid',
+				boxSizing: 'border-box',
 				...style,
 			}}>
 			<img
 				src={wifiSync ? Icons.CheckMark : Icons.XIcon}
 				alt={wifiSync ? 'Synced' : 'Not synced'}
-				className='absolute top-4 right-4 w-8 h-8 object-contain'
+				className='absolute object-contain'
+				style={{
+					top: 'clamp(8px, 1vw, 16px)',
+					right: 'clamp(8px, 1vw, 16px)',
+					width: 'clamp(18px, 2.2vw, 32px)',
+					height: 'clamp(18px, 2.2vw, 32px)',
+				}}
 			/>
 
-			<div className='flex flex-col justify-center items-center w-full px-3'>
+			<div
+				className='flex flex-col justify-center items-center w-full'
+				style={{
+					gap: 'clamp(2px, 0.5vw, 8px)',
+					paddingLeft: 'clamp(4px, 1vw, 12px)',
+					paddingRight: 'clamp(4px, 1vw, 12px)',
+				}}>
 				<p
-					className='text-center font-bold w-full mb-1 text-[12px] min-[900px]:text-[20px] min-[1000px]:text-[26px] drop-shadow'
-					style={{ color: textColor }}>
+					className='text-center font-bold w-full drop-shadow'
+					style={{
+						color: textColor,
+						fontSize: 'clamp(12px, 1.8vw, 26px)',
+						lineHeight: 1.1,
+						margin: 0,
+					}}>
 					Need Guest Wi-Fi?
 				</p>
 
 				<p
-					className='text-center font-bold w-full mb-1 text-[12px] min-[900px]:text-[20px] min-[1000px]:text-[24px] drop-shadow'
-					style={{ color: textColor }}>
+					className='text-center font-bold w-full drop-shadow'
+					style={{
+						color: textColor,
+						fontSize: 'clamp(11px, 1.55vw, 24px)',
+						lineHeight: 1.15,
+						margin: 0,
+					}}>
 					Text{' '}
 					<span style={{ color: accentColor, fontWeight: 'bold' }}>
 						{data?.dailyKey || '...'}
 					</span>{' '}
-					to{' '}
-					<span style={{ color: accentColor, fontWeight: 'bold' }}>
-						{formatPhoneNumber(data?.locales?.en?.phoneNumber) || '...'}
+					<span style={{ whiteSpace: 'nowrap' }}>
+						to{' '}
+						<span style={{ color: accentColor, fontWeight: 'bold' }}>
+							{formatPhoneNumber(data?.locales?.en?.phoneNumber) || '...'}
+						</span>
 					</span>
 				</p>
 
 				<p
-					className='text-center font-bold w-full text-[12px] min-[900px]:text-[20px] min-[1000px]:text-[24px] drop-shadow'
-					style={{ color: textColor }}>
+					className='text-center font-bold w-full drop-shadow'
+					style={{
+						color: textColor,
+						fontSize: 'clamp(11px, 1.55vw, 24px)',
+						lineHeight: 1.15,
+						margin: 0,
+					}}>
 					to get access to{' '}
 					<span style={{ color: accentColor, fontWeight: 'bold' }}>
 						Eduroam

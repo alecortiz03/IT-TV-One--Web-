@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 
 export default function WeatherCard({
 	style = {},
-	width = '350px',
-	height = '120px',
+	width = 'clamp(260px, 28vw, 350px)',
+	height = 'auto',
 	backgroundColor = '#ffffff',
 	borderColor = '#000000',
-	borderRadius = 10,
-	borderWidth = 2,
+	borderRadius = 'clamp(10px, 1.5vw, 24px)',
+	borderWidth = 'clamp(1px, 0.25vw, 2px)',
 	textColor = '#ffffff',
 }) {
 	const latitude = 53.54707375500362;
@@ -102,107 +102,151 @@ export default function WeatherCard({
 
 	return (
 		<div
-			className='
-				overflow-hidden
-				flex flex-row
-				shadow-lg
-				select-none
-			'
+			className='overflow-hidden flex flex-row shadow-lg select-none'
 			style={{
 				width,
 				height,
+				minWidth: 0,
+				minHeight: height === 'auto' ? 'clamp(95px, 10vw, 140px)' : undefined,
+				padding: 'clamp(6px, 0.8vw, 12px)',
 				backgroundColor,
 				borderColor,
 				borderRadius,
 				borderWidth,
 				borderStyle: 'solid',
+				boxSizing: 'border-box',
 				...style,
 			}}>
 			{weather ?
 				<>
-					<div className='flex-1 flex flex-col items-center justify-center overflow-hidden mb-2'>
+					<div style={styles.leftBox}>
 						{weatherInfo?.image && (
 							<img
 								src={weatherInfo.image}
 								alt={weatherInfo.title}
-								className='w-[100px] h-[100px] object-contain'
+								style={styles.weatherIcon}
 							/>
 						)}
 
-						<p
-							className='font-bold text-center text-xs
-							min-[550px]:text-[3px]
-							min-[900px]:text-[7px]
-							min-[1000px]:text-[16px]'
-							style={{
-								color: textColor,
-								textShadow: '-1px 1px 2px rgba(0,0,0,0.75)',
-							}}>
-							{weatherInfo.title}
-						</p>
+						<p style={styles.weatherTitle(textColor)}>{weatherInfo.title}</p>
 
-						<p
-							className='
-								font-bold text-center w-full pb-3
-								text-[2px]
-								min-[550px]:text-[3px]
-								min-[900px]:text-[7px]
-								min-[1000px]:text-[16px]
-							'
-							style={{
-								color: textColor,
-								textShadow: '-1px 1px 4px rgba(0,0,0,0.75)',
-							}}>
+						<p style={styles.temperature(textColor)}>
 							{Math.round(weather.temperature_2m)}°C
 						</p>
 					</div>
 
-					<div className='w-[0.6%] h-full flex justify-center items-center'>
-						<div className='bg-white h-[60%] w-full' />
+					<div style={styles.dividerWrapper}>
+						<div style={styles.divider} />
 					</div>
 
-					<div className='flex-1 flex flex-col justify-center items-center px-7 gap-3'>
-						<p
-							className='font-bold text-center w-full text-xs
-							min-[550px]:text-[3px]
-							min-[900px]:text-[7px]
-							min-[1000px]:text-[20px]'
-							style={{
-								color: textColor,
-								textShadow: '-1px 1px 4px rgba(0,0,0,0.75)',
-							}}>
+					<div style={styles.rightBox}>
+						<p style={styles.detailText(textColor)}>
 							Feels like {Math.round(weather.apparent_temperature)}°C
 						</p>
 
-						<p
-							className='font-bold text-center w-full text-xs
-							min-[550px]:text-[3px]
-							min-[900px]:text-[7px]
-							min-[1000px]:text-[20px]'
-							style={{
-								color: textColor,
-								textShadow: '-1px 1px 2px rgba(0,0,0,0.75)',
-							}}>
+						<p style={styles.detailText(textColor)}>
 							Wind {Math.round(weather.wind_speed_10m)} km/h
 						</p>
 
-						<p
-							className='font-bold text-center w-full text-xs
-							min-[550px]:text-[3px]
-							min-[900px]:text-[7px]
-							min-[1000px]:text-[20px]'
-							style={{
-								color: textColor,
-								textShadow: '-1px 1px 4px rgba(0,0,0,0.75)',
-							}}>
+						<p style={styles.detailText(textColor)}>
 							Humidity {weather.relative_humidity_2m}%
 						</p>
 					</div>
 				</>
-			:	<p className='m-auto text-white text-center font-bold text-xs'>
-					{message}
-				</p>
-			}
+			:	<p style={styles.message(textColor)}>{message}</p>}
 		</div>
 	);
 }
+
+const styles = {
+	leftBox: {
+		flex: 1,
+		minWidth: 0,
+		height: '100%',
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 'clamp(1px, 0.25vw, 4px)',
+		overflow: 'hidden',
+	},
+
+	weatherIcon: {
+		width: 'clamp(42px, 5.5vw, 85px)',
+		height: 'clamp(42px, 5.5vw, 85px)',
+		objectFit: 'contain',
+		flexShrink: 1,
+	},
+
+	weatherTitle: (color) => ({
+		color,
+		fontSize: 'clamp(7px, 0.72vw, 14px)',
+		fontWeight: '800',
+		lineHeight: 1.05,
+		margin: 0,
+		textAlign: 'center',
+		textShadow: '-1px 1px 2px rgba(0,0,0,0.75)',
+	}),
+
+	temperature: (color) => ({
+		color,
+		fontSize: 'clamp(8px, 0.85vw, 16px)',
+		fontWeight: '900',
+		lineHeight: 1,
+		margin: 0,
+		textAlign: 'center',
+		textShadow: '-1px 1px 4px rgba(0,0,0,0.75)',
+	}),
+
+	dividerWrapper: {
+		width: 'clamp(2px, 0.3vw, 5px)',
+		height: '100%',
+		display: 'flex',
+		justifyContent: 'center',
+		alignItems: 'center',
+		flexShrink: 0,
+	},
+
+	divider: {
+		backgroundColor: '#ffffff',
+		height: '65%',
+		width: '100%',
+		borderRadius: 999,
+	},
+
+	rightBox: {
+		flex: 1,
+		minWidth: 0,
+		height: '100%',
+		display: 'flex',
+		flexDirection: 'column',
+		justifyContent: 'center',
+		alignItems: 'center',
+		gap: 'clamp(4px, 0.6vw, 10px)',
+		paddingLeft: 'clamp(8px, 1vw, 18px)',
+		paddingRight: 'clamp(4px, 0.6vw, 10px)',
+		boxSizing: 'border-box',
+		overflow: 'hidden',
+	},
+
+	detailText: (color) => ({
+		color,
+		fontSize: 'clamp(7px, 0.85vw, 17px)',
+		fontWeight: '800',
+		lineHeight: 1.1,
+		margin: 0,
+		textAlign: 'center',
+		whiteSpace: 'nowrap',
+		textShadow: '-1px 1px 4px rgba(0,0,0,0.75)',
+	}),
+
+	message: (color) => ({
+		color,
+		fontSize: 'clamp(9px, 0.9vw, 16px)',
+		fontWeight: '800',
+		lineHeight: 1.1,
+		margin: 'auto',
+		textAlign: 'center',
+		textShadow: '-1px 1px 4px rgba(0,0,0,0.75)',
+	}),
+};

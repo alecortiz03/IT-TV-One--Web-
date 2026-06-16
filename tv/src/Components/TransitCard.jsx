@@ -111,13 +111,13 @@ function parseStops(text) {
 
 export default function TransitCard({
 	style = {},
-	width = '30vw',
-	height = '30vh',
+	width = 'clamp(260px, 30vw, 520px)',
+	height = 'auto',
 	backgroundColor = 'rgba(0,0,0,0.58)',
 	borderColor = 'rgba(255,255,255,0.8)',
 	textColor = '#ffffff',
-	borderRadius = 40,
-	borderWidth = 2,
+	borderRadius = 'clamp(18px, 3vw, 40px)',
+	borderWidth = 'clamp(1px, 0.25vw, 2px)',
 }) {
 	const [items, setItems] = useState([]);
 	const [index, setIndex] = useState(0);
@@ -218,44 +218,118 @@ export default function TransitCard({
 
 	return (
 		<div
-			className='select-none overflow-hidden shadow-lg flex flex-col items-center justify-center p-5'
+			className='select-none overflow-hidden shadow-lg flex flex-col items-center justify-center'
 			style={{
 				width,
 				height,
+				minWidth: 0,
+				minHeight: height === 'auto' ? 'clamp(160px, 18vh, 320px)' : undefined,
+				padding: 'clamp(10px, 1.4vw, 24px)',
 				backgroundColor,
 				borderColor,
 				borderRadius,
 				borderWidth,
 				borderStyle: 'solid',
+				boxSizing: 'border-box',
 				...style,
 			}}>
 			{current ?
-				<div className='flex flex-col items-center justify-center text-center transition-all duration-500 w-full pt-1.5'>
-					<div className='flex flex-row items-center justify-center gap-3 w-full mb-1.5'>
-						<div
-							style={{
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								padding: '0.6vw',
-								backgroundColor: 'rgba(255, 255, 255, 0.2)',
-								borderRadius: '9999px',
-								width: '3vw',
-								height: '3vw',
-								boxShadow: '0 0 10px #1a3464',
-								flexShrink: 0,
-							}}>
+				<div
+					className='flex flex-col items-center justify-center text-center transition-all duration-500'
+					style={styles.contentBox}>
+					<div style={styles.routeRow}>
+						<div style={styles.iconCircle}>
 							<img
 								src={Icons.Bus}
 								alt='Bus'
-								className='w-3vw h-3vw object-contain'
 								style={styles.busIcon}
 							/>
 						</div>
 
+						<p style={styles.routeNumber}>{current.routeNumber}</p>
+
+						{current.routeName ?
+							<p
+								className='truncate'
+								style={styles.routeName(textColor)}>
+								{current.routeName}
+							</p>
+						:	null}
+					</div>
+
+					<div style={styles.stopRow}>
 						<p
-							style={{
-								textShadow: `
+							className='truncate'
+							style={styles.stopText(textColor)}>
+							{current.stopName}
+						</p>
+
+						<p style={styles.minutesText(textColor)}>- {current.minutes} min</p>
+					</div>
+
+					<p
+						className='truncate'
+						style={styles.distanceText(textColor)}>
+						{current.distance.toFixed(1)} mi away
+					</p>
+				</div>
+			:	<p
+					className='font-bold text-center'
+					style={styles.message(textColor)}>
+					{message}
+				</p>
+			}
+		</div>
+	);
+}
+
+const styles = {
+	contentBox: {
+		width: '100%',
+		height: '100%',
+		gap: 'clamp(8px, 1vw, 18px)',
+		boxSizing: 'border-box',
+		overflow: 'hidden',
+	},
+
+	routeRow: {
+		width: '100%',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 'clamp(6px, 0.9vw, 14px)',
+		overflow: 'hidden',
+	},
+
+	iconCircle: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		padding: 'clamp(5px, 0.6vw, 10px)',
+		backgroundColor: 'rgba(255, 255, 255, 0.2)',
+		borderRadius: '9999px',
+		width: 'clamp(30px, 3vw, 58px)',
+		height: 'clamp(30px, 3vw, 58px)',
+		boxShadow: '0 0 10px #1a3464',
+		boxSizing: 'border-box',
+		flexShrink: 0,
+	},
+
+	busIcon: {
+		width: '100%',
+		height: '100%',
+		objectFit: 'contain',
+		filter: 'invert(100%) sepia(100%) grayscale(100%)',
+	},
+
+	routeNumber: {
+		color: '#1a3464',
+		fontSize: 'clamp(18px, 2vw, 36px)',
+		fontWeight: '900',
+		lineHeight: 1,
+		margin: 0,
+		flexShrink: 0,
+		textShadow: `
 			-2px -2px 0 #ffffff,
 			 2px -2px 0 #ffffff,
 			-2px  2px 0 #ffffff,
@@ -265,62 +339,75 @@ export default function TransitCard({
 			-2px  0px 0 #ffffff,
 			 2px  0px 0 #ffffff
 		`,
-							}}
-							className='font-bold text-[#1a3464] text-[clamp(18px,2vw,36px)] leading-none '>
-							{current.routeNumber}
-						</p>
-						{current.routeName ?
-							<p
-								className='font-bold text-[clamp(12px,1vw,19px)] opacity-90 truncate max-w-[90%]'
-								style={{
-									color: textColor,
-									textShadow: `
-			-2px -2px 0 #1a3464,
-			 2px -2px 0 #1a3464,
-			-2px  2px 0 #1a3464,
-			 2px  2px 0 #1a3464,
-			 0px -2px 0 #1a3464,
-			 0px  2px 0 #1a3464,
-			-2px  0px 0 #1a3464,
-			 2px  0px 0 #1a3464,
-			 0px  0px 6px rgba(0,0,0,0.75)
-		`,
-								}}>
-								{current.routeName}
-							</p>
-						:	null}
-					</div>
-					<div className='flex flex-row items-center justify-center gap-1 w-full  p-2 rounded-lg'>
-						<p
-							className='font-bold text-[clamp(12px,1vw,24px)] truncate max-w-[90%] opacity-60 [text-shadow:1px_1px_2px_rgba(0,0,0,0.75)]'
-							style={{ color: textColor }}>
-							{current.stopName}
-						</p>
-						<p
-							className='font-bold text-[clamp(12px,1vw,24px)] truncate max-w-[90%] opacity-60 [text-shadow:1px_1px_2px_rgba(0,0,0,0.75)]'
-							style={{ color: textColor }}>
-							- {current.minutes} min
-						</p>
-					</div>
-
-					<p
-						className='font-bold text-[clamp(10px,0.9vw,16px)] truncate max-w-[90%] opacity-60 [text-shadow:1px_1px_2px_rgba(0,0,0,0.75)]'
-						style={{ color: textColor }}>
-						{current.distance.toFixed(1)} mi away
-					</p>
-				</div>
-			:	<p
-					className='font-bold text-center text-[clamp(12px,1.2vw,22px)]'
-					style={{ color: textColor }}>
-					{message}
-				</p>
-			}
-		</div>
-	);
-}
-
-const styles = {
-	busIcon: {
-		filter: 'invert(100%) sepia(100%) grayscale(100%)',
 	},
+
+	routeName: (color) => ({
+		color,
+		fontSize: 'clamp(9px, 0.85vw, 17px)',
+		fontWeight: '800',
+		lineHeight: 1.1,
+		margin: 0,
+		maxWidth: '65%',
+		opacity: 0.95,
+		textShadow: `
+			-1px -1px 0 #1a3464,
+			 1px -1px 0 #1a3464,
+			-1px  1px 0 #1a3464,
+			 1px  1px 0 #1a3464,
+			 0px  0px 5px rgba(0,0,0,0.75)
+		`,
+	}),
+
+	stopRow: {
+		width: '100%',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 'clamp(4px, 0.5vw, 8px)',
+		padding: 'clamp(2px, 0.4vw, 8px)',
+		boxSizing: 'border-box',
+		overflow: 'hidden',
+	},
+
+	stopText: (color) => ({
+		color,
+		fontSize: 'clamp(10px, 1vw, 20px)',
+		fontWeight: '800',
+		lineHeight: 1.1,
+		margin: 0,
+		maxWidth: '70%',
+		opacity: 0.7,
+		textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
+	}),
+
+	minutesText: (color) => ({
+		color,
+		fontSize: 'clamp(10px, 1vw, 20px)',
+		fontWeight: '800',
+		lineHeight: 1.1,
+		margin: 0,
+		flexShrink: 0,
+		opacity: 0.7,
+		textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
+	}),
+
+	distanceText: (color) => ({
+		color,
+		fontSize: 'clamp(8px, 0.8vw, 15px)',
+		fontWeight: '800',
+		lineHeight: 1.1,
+		margin: 0,
+		maxWidth: '90%',
+		opacity: 0.65,
+		textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
+	}),
+
+	message: (color) => ({
+		color,
+		fontSize: 'clamp(11px, 1vw, 20px)',
+		fontWeight: '800',
+		lineHeight: 1.15,
+		margin: 0,
+		textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
+	}),
 };

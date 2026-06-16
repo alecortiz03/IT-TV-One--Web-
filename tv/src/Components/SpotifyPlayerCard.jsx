@@ -8,15 +8,15 @@ export default function SpotifyPlayerCard({
 	accessToken,
 	style = {},
 	width = 'clamp(180px, 12vw, 360px)',
-	height = 'clamp(260px, 25vh, 520px)',
+	height = 'auto',
 	backgroundColor = 'rgba(2, 2, 2, 0.61)',
 	borderColor = '#212324bd',
 	textColor = '#f8f6f6',
 	subTextColor = '#cccccc',
-	borderRadius = '3vw',
-	borderWidth = 6,
+	borderRadius = 'clamp(18px, 3vw, 45px)',
+	borderWidth = 'clamp(2px, 0.4vw, 6px)',
 }) {
-	const [status, setStatus] = useState('Waiting for Spotify connection...');
+	const [status, setStatus] = useState('Device ready to connect');
 	const [deviceId, setDeviceId] = useState(null);
 	const [track, setTrack] = useState(null);
 	const [isPlaying, setIsPlaying] = useState(false);
@@ -41,11 +41,17 @@ export default function SpotifyPlayerCard({
 
 	useEffect(() => {
 		if (!accessToken) {
-			setStatus('Waiting for Spotify login...');
+			setStatus('Device ready to connect');
 			setTrack(null);
 			setIsPlaying(false);
 			setCurrentPosition(0);
 			setDeviceId(null);
+
+			if (playerRef.current) {
+				playerRef.current.disconnect();
+				playerRef.current = null;
+			}
+
 			return;
 		}
 
@@ -53,12 +59,12 @@ export default function SpotifyPlayerCard({
 			setTrack(null);
 			setIsPlaying(false);
 			setCurrentPosition(0);
-			setStatus('Spotify logged in. Waiting for player connection...');
+			setStatus('Device ready to connect');
 		}
 
 		function setupPlayer() {
 			if (!window.Spotify) {
-				setStatus('Spotify SDK not loaded yet...');
+				setStatus('Loading Spotify player...');
 				return;
 			}
 
@@ -77,7 +83,7 @@ export default function SpotifyPlayerCard({
 
 			player.addListener('ready', async ({ device_id }) => {
 				setDeviceId(device_id);
-				setStatus('Device ready. Transferring playback...');
+				setStatus('Device ready to connect');
 
 				try {
 					await fetch('https://api.spotify.com/v1/me/player', {
@@ -91,22 +97,15 @@ export default function SpotifyPlayerCard({
 							play: true,
 						}),
 					});
-
-					setStatus('Spotify connected to ITTVOne.');
 				} catch (error) {
 					console.error(error);
-					setStatus('Device ready. Open Spotify and select ITTVOne manually.');
+					setStatus('Device ready to connect');
 				}
 			});
 
 			player.addListener('not_ready', () => {
 				setDeviceId(null);
-				setTrack(null);
-				setIsPlaying(false);
-				setCurrentPosition(0);
-				setStatus(
-					'Spotify player disconnected. Waiting for player connection...',
-				);
+				clearPlayback();
 			});
 
 			player.addListener('player_state_changed', (state) => {
@@ -122,16 +121,18 @@ export default function SpotifyPlayerCard({
 					return;
 				}
 
+				setStatus('');
 				setIsPlaying(!state.paused);
 				setCurrentPosition(state.position);
 
 				setTrack({
-					title: currentTrack.name,
-					artist: currentTrack.artists.map((artist) => artist.name).join(', '),
-					album: currentTrack.album.name,
-					image: currentTrack.album.images?.[0]?.url,
+					title: currentTrack.name || 'Unknown Song',
+					artist:
+						currentTrack.artists?.map((artist) => artist.name).join(', ') ||
+						'Unknown Artist',
+					album: currentTrack.album?.name || 'Unknown Album',
+					image: currentTrack.album?.images?.[0]?.url,
 					duration: state.duration,
-					position: state.position,
 				});
 			});
 
@@ -156,11 +157,9 @@ export default function SpotifyPlayerCard({
 			});
 
 			player.connect().then((success) => {
-				setStatus(
-					success ?
-						'Spotify logged in. Waiting for player connection...'
-					:	'Spotify player failed to connect.',
-				);
+				if (!success) {
+					setStatus('Spotify player failed to connect.');
+				}
 			});
 		}
 
@@ -186,54 +185,48 @@ export default function SpotifyPlayerCard({
 
 	return (
 		<div
-			className='select-none flex flex-col items-center justify-center overflow-hidden shadow-lg'
+			className='select-none flex items-center justify-center overflow-hidden shadow-lg'
 			style={{
 				width,
 				height,
+				minWidth: 0,
+				minHeight: height === 'auto' ? 'clamp(260px, 25vh, 520px)' : undefined,
+				padding: 'clamp(10px, 1vw, 24px)',
 				backgroundColor,
 				borderColor,
 				borderRadius,
 				borderWidth,
 				borderStyle: 'solid',
+				boxSizing: 'border-box',
 				boxShadow: '0 8px 20px rgba(0,0,0,0.45)',
 				...style,
 			}}>
 			{!accessToken && (
-				<>
-					<div
+				<div
+					className='flex items-center justify-center'
+					style={styles.qrBox}>
+					<QRCode
+						value={SPOTIFY_CONNECT_URL}
+						size={100}
+						bgColor='#3fca2a'
+						fgColor='#000000'
+						level='H'
+						logoImage={Icons.Spotify}
+						logoWidth={30}
+						logoHeight={30}
 						style={{
-							backgroundColor: 'transparent',
-							borderRadius: 16,
-							padding: 6,
-							marginBottom: 6,
-						}}>
-						<QRCode
-							value={SPOTIFY_CONNECT_URL}
-							size={100}
-							bgColor='#3fca2a'
-							fgColor='#000000'
-							level='H'
-							logoImage={Icons.Spotify}
-							logoWidth={30}
-							logoHeight={30}
-							style={{
-								width: 'clamp(80px, 8vw, 160px)',
-								height: 'clamp(80px, 8vw, 160px)',
-								borderRadius: 16,
-							}}
-						/>
-					</div>
-
-					<p
-						className='font-bold text-center '
-						style={styles.status(textColor)}>
-						Scan to connect Spotify
-					</p>
-				</>
+							width: 100,
+							height: 100,
+							borderRadius: 12,
+						}}
+					/>
+				</div>
 			)}
 
 			{accessToken && !track && (
-				<>
+				<div
+					className='flex flex-col items-center justify-center'
+					style={styles.contentBox}>
 					<p
 						className='font-bold text-center'
 						style={styles.status(textColor)}>
@@ -242,49 +235,46 @@ export default function SpotifyPlayerCard({
 
 					{deviceId && (
 						<p
-							className='text-center mt-2'
-							style={{
-								color: subTextColor,
-								fontSize: 'clamp(8px, 0.7vw, 14px)',
-							}}>
-							Device ready
+							className='text-center'
+							style={styles.deviceReady(subTextColor)}>
+							Open Spotify and select ITTVOne
 						</p>
 					)}
-				</>
+				</div>
 			)}
 
 			{accessToken && track && (
-				<>
+				<div
+					className='flex flex-col items-center justify-center'
+					style={styles.contentBox}>
 					{track.image && (
 						<img
 							src={track.image}
 							alt={track.title}
 							className='object-cover'
-							style={{
-								width: 'clamp(70px, 7vw, 170px)',
-								height: 'clamp(70px, 7vw, 170px)',
-								borderRadius: 24,
-							}}
+							style={styles.albumArt}
 						/>
 					)}
 
-					<p
-						className='font-bold text-center truncate w-[100%] '
-						style={styles.title(textColor)}>
-						{track.title}
-					</p>
+					<div style={styles.textBox}>
+						<p
+							className='font-bold text-center truncate w-full'
+							style={styles.title(textColor)}>
+							{track.title}
+						</p>
 
-					<p
-						className='text-center truncate w-[100%] '
-						style={styles.sub(subTextColor)}>
-						{track.artist}
-					</p>
+						<p
+							className='text-center truncate w-full'
+							style={styles.subtitle(subTextColor)}>
+							{track.album}
+						</p>
 
-					<p
-						className='text-center truncate w-[100%]'
-						style={styles.album(subTextColor)}>
-						{track.album}
-					</p>
+						<p
+							className='text-center truncate w-full'
+							style={styles.subtitle(subTextColor)}>
+							{track.artist}
+						</p>
+					</div>
 
 					<p
 						className='font-bold text-center'
@@ -302,57 +292,95 @@ export default function SpotifyPlayerCard({
 							}}
 						/>
 					</div>
-				</>
+				</div>
 			)}
 		</div>
 	);
 }
 
 const styles = {
+	qrBox: {
+		width: '100%',
+		height: '100%',
+		padding: 3,
+		boxSizing: 'border-box',
+		overflow: 'hidden',
+	},
+
+	contentBox: {
+		width: '100%',
+		height: '100%',
+		padding: 'clamp(6px, 0.8vw, 16px)',
+		gap: 'clamp(4px, 0.5vw, 9px)',
+		boxSizing: 'border-box',
+		overflow: 'hidden',
+	},
+
+	textBox: {
+		width: '100%',
+		display: 'flex',
+		flexDirection: 'column',
+		gap: 'clamp(1px, 0.2vw, 4px)',
+		overflow: 'hidden',
+		flexShrink: 0,
+	},
+
 	status: (color) => ({
 		color,
-		fontSize: 'clamp(8px, 0.3vw, 16px)',
+		fontSize: 'clamp(8px, 0.7vw, 15px)',
+		lineHeight: 1.2,
+		margin: 0,
+		maxWidth: '90%',
 		textShadow: '2px 2px 4px rgba(0,0,0,0.75)',
 	}),
+
+	deviceReady: (color) => ({
+		color,
+		fontSize: 'clamp(7px, 0.62vw, 13px)',
+		lineHeight: 1.1,
+		margin: 0,
+		maxWidth: '90%',
+	}),
+
+	albumArt: {
+		width: 'clamp(58px, 5.8vw, 145px)',
+		height: 'clamp(58px, 5.8vw, 145px)',
+		borderRadius: 'clamp(10px, 1.5vw, 22px)',
+		flexShrink: 1,
+	},
 
 	title: (color) => ({
 		color,
-		fontSize: 'clamp(10px, 1vw, 24px)',
-		fontWeight: '800',
-		lineHeight: 1.1,
+		fontSize: 'clamp(8px, 0.82vw, 18px)',
+		fontWeight: '900',
+		lineHeight: 1.05,
+		margin: 0,
 		textShadow: '2px 2px 4px rgba(0,0,0,0.75)',
-		marginTop: 3,
 	}),
 
-	sub: (color) => ({
+	subtitle: (color) => ({
 		color,
-		fontSize: 'clamp(6px, 0.1vw, 18px)',
+		fontSize: 'clamp(6px, 0.58vw, 12px)',
 		fontWeight: '600',
-		lineHeight: 1.1,
-	}),
-
-	album: (color) => ({
-		color,
-		fontSize: 'clamp(6px, 0.1vw, 16px)',
-		fontWeight: '500',
-		lineHeight: 1.1,
-		marginBottom: 6,
+		lineHeight: 1.05,
+		margin: 0,
 	}),
 
 	playingText: (color) => ({
 		color,
-		fontSize: 'clamp(6px, 0.1vw, 17px)',
+		fontSize: 'clamp(7px, 0.65vw, 13px)',
 		fontWeight: '700',
-		lineHeight: 1.1,
-		marginBottom: 3,
-		marginTop: 3,
+		lineHeight: 1.05,
+		margin: 0,
+		flexShrink: 0,
 	}),
 
 	progressBar: {
-		width: '60%',
-		height: 8,
+		width: '75%',
+		height: 'clamp(4px, 0.42vw, 8px)',
 		backgroundColor: 'rgba(255,255,255,0.15)',
 		borderRadius: 999,
 		overflow: 'hidden',
+		flexShrink: 0,
 	},
 };

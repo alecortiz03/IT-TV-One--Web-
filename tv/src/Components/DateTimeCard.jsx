@@ -32,7 +32,7 @@ export default function DateTimeCard({
 				day: 'numeric',
 			});
 
-			setCurrentTime(`${day}, ${time}  -  ${date}`);
+			setCurrentTime(`${day}, ${time} - ${date}`);
 		};
 
 		updateTime();
@@ -46,35 +46,37 @@ export default function DateTimeCard({
 		<div
 			className='
 				select-none
-				flex flex-row flex-wrap
-				justify-center items-center
+				flex
+				justify-center
+				items-center
 				shadow-lg
+				overflow-hidden
 			'
 			style={{
-				width: width,
-				height: height,
+				width,
+				height,
+				minHeight: height === 'auto' ? 'clamp(24px, 4vw, 80px)' : undefined,
+				padding: 'clamp(4px, 0.8vw, 16px)',
 				backgroundColor,
 				borderColor,
 				borderRadius,
 				borderWidth,
 				borderStyle: 'solid',
+				boxSizing: 'border-box',
 				...style,
 			}}>
 			<p
 				className='
-					font-bold text-center shrink
-					text-[7.5px]
-					min-[400px]:text-[8.5px]
-					min-[500px]:text-[12px]
-					min-[550px]:text-[20px]
-					min-[900px]:text-[22px]
-					min-[1000px]:text-[50px]
+					font-bold
+					text-center
+					whitespace-nowrap
 				'
 				style={{
+					fontSize: 'clamp(8px, 2.2vw, 32px)',
 					backgroundColor: textBackgroundColor,
 					color: textColor,
 					textShadow: '2px 2px 4px rgba(0,0,0,0.75)',
-					lineHeight: 1,
+					lineHeight: 1.1,
 				}}>
 				{currentTime}
 			</p>
