@@ -7,10 +7,10 @@ import { Icons } from '../AppData/Icons';
 
 const CENTER_LAT = 53.5471;
 const CENTER_LON = -113.506;
-const RADIUS_MILES = 3;
+const RADIUS_KILOMETERS = 5;
 
-function getDistanceMiles(lat1, lon1, lat2, lon2) {
-	const R = 3958.8;
+function getDistanceKilometers(lat1, lon1, lat2, lon2) {
+	const R = 6371;
 
 	const dLat = ((lat2 - lat1) * Math.PI) / 180;
 	const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -96,9 +96,14 @@ function parseStops(text) {
 			continue;
 		}
 
-		const distance = getDistanceMiles(CENTER_LAT, CENTER_LON, stopLat, stopLon);
+		const distance = getDistanceKilometers(
+			CENTER_LAT,
+			CENTER_LON,
+			stopLat,
+			stopLon,
+		);
 
-		if (distance <= RADIUS_MILES) {
+		if (distance <= RADIUS_KILOMETERS) {
 			lookup[stopId] = {
 				name: stopName,
 				distance,
@@ -268,9 +273,9 @@ export default function TransitCard({
 					</div>
 
 					<p
-						className='truncate'
+						className='truncate pb-1.5'
 						style={styles.distanceText(textColor)}>
-						{current.distance.toFixed(1)} mi away
+						{current.distance.toFixed(1)} km away
 					</p>
 				</div>
 			:	<p
@@ -396,7 +401,6 @@ const styles = {
 		fontSize: 'clamp(8px, 0.8vw, 15px)',
 		fontWeight: '800',
 		lineHeight: 1.1,
-		margin: 0,
 		maxWidth: '90%',
 		opacity: 0.65,
 		textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
