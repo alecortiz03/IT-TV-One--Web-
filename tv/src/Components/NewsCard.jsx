@@ -15,7 +15,8 @@ export default function NewsCard({
 	const [articles, setArticles] = useState([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [message, setMessage] = useState('Loading...');
-
+	const targetDate = new Date('2027-01-01T07:00:00');
+	const [timeLeft, setTimeLeft] = useState('');
 	function getYouTubeVideoId(url) {
 		if (!url) return null;
 
@@ -33,11 +34,33 @@ export default function NewsCard({
 			const link = entry.querySelector('link')?.getAttribute('href') || '';
 
 			return {
+				type: 'youtube',
 				title,
 				links: [{ url: link }],
 			};
 		});
 	}
+	useEffect(() => {
+		function updateCountdown() {
+			const now = new Date();
+			const difference = targetDate - now;
+
+			// calculate days, hours, minutes, seconds...
+			const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+			const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+			const minutes = Math.floor((difference / 1000 / 60) % 60);
+			const seconds = Math.floor((difference / 1000) % 60);
+
+			// setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+			setTimeLeft(`${days} day(s), ${hours} hour(s), and ${minutes} minute(s)`);
+		}
+
+		updateCountdown(); // update immediately
+
+		const interval = setInterval(updateCountdown, 1000);
+
+		return () => clearInterval(interval);
+	}, []);
 
 	useEffect(() => {
 		async function fetchNews() {
@@ -45,7 +68,37 @@ export default function NewsCard({
 				const rssText = await invoke('fetch_rss_feed');
 				const parsedArticles = parseRssFeed(rssText);
 
-				setArticles(parsedArticles);
+				const MacEwanEastCam = {
+					type: 'mjpg',
+					title: 'Grand Opening of Building 12',
+					url: 'https://busconstructioncameast.macewan.ca/mjpg/video.mjpg',
+				};
+				const MacEwanCam = {
+					type: 'mjpg',
+					title: 'Grand Opening of Building 12',
+					url: 'https://busconstructioncam.macewan.ca/mjpg/video.mjpg',
+				};
+
+				const mixedArticles = [
+					...parsedArticles.slice(0, 2),
+					MacEwanEastCam,
+
+					...parsedArticles.slice(2, 5),
+					MacEwanCam,
+
+					...parsedArticles.slice(5, 8),
+					MacEwanEastCam,
+
+					...parsedArticles.slice(8, 11),
+					MacEwanCam,
+
+					...parsedArticles.slice(11, 14),
+					MacEwanEastCam,
+
+					...parsedArticles.slice(14),
+				];
+
+				setArticles(mixedArticles);
 				setCurrentIndex(0);
 				setMessage('');
 			} catch (error) {
@@ -75,7 +128,9 @@ export default function NewsCard({
 
 	const currentArticle = articles[currentIndex];
 
-	const videoUrl = currentArticle?.links?.[0]?.url;
+	const videoUrl =
+		currentArticle?.type === 'youtube' ? currentArticle?.links?.[0]?.url : null;
+
 	const videoId = getYouTubeVideoId(videoUrl);
 
 	const embedUrl =
@@ -119,7 +174,19 @@ export default function NewsCard({
 							boxShadow: '0 10px 15px rgba(0,0,0,0.25)',
 							flexShrink: 0,
 						}}>
-						{embedUrl ?
+						{currentArticle.type === 'mjpg' ?
+							<img
+								src={currentArticle.url}
+								alt={currentArticle.title}
+								style={{
+									width: '100%',
+									height: '100%',
+									display: 'block',
+									objectFit: 'cover',
+									objectPosition: 'center bottom',
+								}}
+							/>
+						: embedUrl ?
 							<iframe
 								src={embedUrl}
 								style={{
@@ -160,7 +227,9 @@ export default function NewsCard({
 								lineHeight: 1.1,
 								margin: 0,
 							}}>
-							{currentArticle.title}
+							{currentArticle.type === 'mjpg' ?
+								`${timeLeft} left until the Grand Opening of Building 12!`
+							:	currentArticle.title}
 						</p>
 					</div>
 				</>
