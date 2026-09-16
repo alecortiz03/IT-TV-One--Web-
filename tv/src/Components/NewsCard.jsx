@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { Images } from '../AppData/Images';
 
 export default function NewsCard({
 	style = {},
 	width = 'clamp(340px, 60vw, 1200px)',
-
-	// Fixed responsive height instead of auto
 	height = '39vw',
 	borderRadius = 'clamp(22px, 2.4vw, 40px)',
 	borderWidth = 1,
@@ -27,32 +26,24 @@ export default function NewsCard({
 	function getYouTubeVideoId(url) {
 		if (!url) return null;
 
-		// Standard YouTube URL:
-		// https://www.youtube.com/watch?v=VIDEO_ID
 		const watchMatch = url.match(/[?&]v=([^&]+)/);
 
 		if (watchMatch) {
 			return watchMatch[1];
 		}
 
-		// YouTube Shorts:
-		// https://www.youtube.com/shorts/VIDEO_ID
 		const shortsMatch = url.match(/youtube\.com\/shorts\/([^?&/]+)/);
 
 		if (shortsMatch) {
 			return shortsMatch[1];
 		}
 
-		// Short YouTube URL:
-		// https://youtu.be/VIDEO_ID
 		const shortLinkMatch = url.match(/youtu\.be\/([^?&/]+)/);
 
 		if (shortLinkMatch) {
 			return shortLinkMatch[1];
 		}
 
-		// Embed URL:
-		// https://www.youtube.com/embed/VIDEO_ID
 		const embedMatch = url.match(/youtube\.com\/embed\/([^?&/]+)/);
 
 		if (embedMatch) {
@@ -64,13 +55,6 @@ export default function NewsCard({
 
 	// ---------------------------------------------------------
 	// Parse YouTube RSS
-	//
-	// Used for:
-	// - CNET
-	// - Bloomberg Tech
-	//
-	// IMPORTANT:
-	// Entries without a usable YouTube video are skipped.
 	// ---------------------------------------------------------
 
 	function parseRssFeed(xmlText, source = 'youtube') {
@@ -78,65 +62,77 @@ export default function NewsCard({
 
 		const xml = parser.parseFromString(xmlText, 'text/xml');
 
+		// Detect invalid XML
+		const parserError = xml.querySelector('parsererror');
+
+		if (parserError) {
+			console.error(`${source} RSS XML parse error`, parserError.textContent);
+			return [];
+		}
+
 		const entries = Array.from(xml.querySelectorAll('entry'));
 
-		return (
-			entries
-				.map((entry) => {
-					const title = entry.querySelector('title')?.textContent || 'Untitled';
+		console.log(`${source} RSS entries found: ${entries.length}`);
 
-					// Prefer the actual YouTube page link
-					const link =
-						entry
-							.querySelector('link[rel="alternate"]')
-							?.getAttribute('href') ||
-						entry.querySelector('link')?.getAttribute('href') ||
-						'';
+		return entries
+			.map((entry) => {
+				const title = entry.querySelector('title')?.textContent || 'Untitled';
 
-					// YouTube RSS normally gives us yt:videoId.
-					// If it doesn't, try extracting it from the URL.
-					const videoId =
-						entry.getElementsByTagName('yt:videoId')[0]?.textContent?.trim() ||
-						getYouTubeVideoId(link);
+				const link =
+					entry.querySelector('link[rel="alternate"]')?.getAttribute('href') ||
+					entry.querySelector('link')?.getAttribute('href') ||
+					'';
 
-					const published =
-						entry.querySelector('published')?.textContent || null;
+				/*
+				 * getElementsByTagNameNS is more reliable with
+				 * namespaced YouTube RSS elements such as yt:videoId.
+				 */
+				let videoId = null;
 
-					return {
-						type: 'youtube',
-						source,
-						title,
-						videoId,
-						published,
-						links: [
-							{
-								url: link,
-							},
-						],
-					};
-				})
+				const ytVideoId = entry.getElementsByTagNameNS(
+					'http://www.youtube.com/xml/schemas/2015',
+					'videoId',
+				)[0]?.textContent;
 
-				// ---------------------------------------------
-				// SKIP anything without a playable video
-				// ---------------------------------------------
-				.filter((article) => {
-					return Boolean(article.videoId);
-				})
-		);
+				if (ytVideoId) {
+					videoId = ytVideoId.trim();
+				}
+
+				// Fallback
+				if (!videoId) {
+					const namespacedVideoId =
+						entry.getElementsByTagName('yt:videoId')[0]?.textContent;
+
+					if (namespacedVideoId) {
+						videoId = namespacedVideoId.trim();
+					}
+				}
+
+				// Final fallback: extract ID from URL
+				if (!videoId) {
+					videoId = getYouTubeVideoId(link);
+				}
+
+				const published = entry.querySelector('published')?.textContent || null;
+
+				return {
+					type: 'youtube',
+					source,
+					title,
+					videoId,
+					published,
+					links: [
+						{
+							url: link,
+						},
+					],
+				};
+			})
+			.filter((article) => Boolean(article.videoId));
 	}
 
 	// ---------------------------------------------------------
 	// Shuffle Array
-	//
-	// Fisher-Yates shuffle.
-	//
-	// This mixes CNET and Bloomberg instead of always doing:
-	//
-	// CNET
-	// Bloomberg
-	// CNET
-	// Bloomberg
-	//
 	// ---------------------------------------------------------
 
 	function shuffleArray(array) {
@@ -153,9 +149,6 @@ export default function NewsCard({
 
 	// ---------------------------------------------------------
 	// Sprinkle Cameras Through News
-	//
-	// Adds a camera after approximately every 3 news stories.
-	// Alternates between the east and main cameras.
 	// ---------------------------------------------------------
 
 	function sprinkleCameras(newsArticles) {
@@ -180,7 +173,6 @@ export default function NewsCard({
 		newsArticles.forEach((article, index) => {
 			mixedArticles.push(article);
 
-			// Add a camera after every 3 news stories
 			if ((index + 1) % 3 === 0 && index !== newsArticles.length - 1) {
 				mixedArticles.push(cameras[cameraIndex % cameras.length]);
 
@@ -224,47 +216,40 @@ export default function NewsCard({
 	}, []);
 
 	// ---------------------------------------------------------
-	// Fetch CNET + Bloomberg
+	// Fetch CNET + Bloomberg THROUGH TAURI
 	// ---------------------------------------------------------
 
 	useEffect(() => {
 		async function fetchNews() {
 			try {
-				// ---------------------------------------------
-				// Fetch both feeds simultaneously
-				// ---------------------------------------------
+				setMessage('Loading...');
 
-				const [cnetResponse, bloombergResponse] = await Promise.all([
-					fetch('/api/rss'),
-					fetch('/api/rss/bloomberg'),
-				]);
+				console.log('Loading RSS feeds through Tauri...');
 
-				if (!cnetResponse.ok) {
-					throw new Error(`CNET RSS request failed: ${cnetResponse.status}`);
-				}
-
-				if (!bloombergResponse.ok) {
-					throw new Error(
-						`Bloomberg RSS request failed: ${bloombergResponse.status}`,
-					);
-				}
-
-				// ---------------------------------------------
-				// Get XML
-				// ---------------------------------------------
+				/*
+				 * Call Rust directly.
+				 *
+				 * These correspond to:
+				 *
+				 * #[tauri::command]
+				 * fetch_rss_feed()
+				 *
+				 * #[tauri::command]
+				 * fetch_bloomberg_rss_feed()
+				 */
 
 				const [cnetText, bloombergText] = await Promise.all([
-					cnetResponse.text(),
-					bloombergResponse.text(),
+					invoke('fetch_rss_feed'),
+					invoke('fetch_bloomberg_rss_feed'),
 				]);
 
-				// ---------------------------------------------
-				// Parse feeds
-				//
-				// parseRssFeed automatically removes stories
-				// that don't contain a YouTube video.
-				// ---------------------------------------------
+				console.log(`CNET RSS received: ${cnetText.length} characters`);
 
+				console.log(
+					`Bloomberg RSS received: ${bloombergText.length} characters`,
+				);
+
+				// Parse feeds
 				const cnetArticles = parseRssFeed(cnetText, 'cnet');
 
 				const bloombergArticles = parseRssFeed(bloombergText, 'bloomberg');
@@ -273,42 +258,48 @@ export default function NewsCard({
 
 				console.log(`Bloomberg videos: ${bloombergArticles.length}`);
 
-				// ---------------------------------------------
-				// Combine feeds into ONE pool
-				// ---------------------------------------------
-
+				// Combine feeds
 				const combinedArticles = [...cnetArticles, ...bloombergArticles];
 
-				// ---------------------------------------------
-				// Randomly mix CNET + Bloomberg
-				// ---------------------------------------------
+				console.log(`Combined news videos: ${combinedArticles.length}`);
 
+				/*
+				 * Don't silently show an empty card if the RSS
+				 * requests succeeded but parsing found nothing.
+				 */
+				if (combinedArticles.length === 0) {
+					throw new Error(
+						'RSS feeds loaded, but no playable YouTube videos were found.',
+					);
+				}
+
+				// Randomize CNET + Bloomberg
 				const shuffledArticles = shuffleArray(combinedArticles);
 
-				// ---------------------------------------------
-				// Sprinkle Building 12 cameras throughout
-				// ---------------------------------------------
-
+				// Insert cameras
 				const mixedArticles = sprinkleCameras(shuffledArticles);
 
 				console.log(`Total rotation items: ${mixedArticles.length}`);
 
 				setArticles(mixedArticles);
-
 				setCurrentIndex(0);
-
 				setMessage('');
 			} catch (error) {
-				console.log('News error:', error);
+				console.error('News loading error:', error);
 
-				setMessage('Could not load news');
+				const errorMessage =
+					typeof error === 'string' ? error : error?.message || String(error);
+
+				setArticles([]);
+
+				setMessage(`Could not load news: ${errorMessage}`);
 			}
 		}
 
 		// Load immediately
 		fetchNews();
 
-		// Refresh feeds every 30 minutes
+		// Refresh every 30 minutes
 		const interval = setInterval(fetchNews, 30 * 60 * 1000);
 
 		return () => clearInterval(interval);
@@ -341,18 +332,10 @@ export default function NewsCard({
 	const videoUrl =
 		currentArticle?.type === 'youtube' ? currentArticle?.links?.[0]?.url : null;
 
-	// Prefer yt:videoId from the RSS feed.
-	// Fall back to extracting the ID from the URL.
 	const videoId = currentArticle?.videoId || getYouTubeVideoId(videoUrl);
 
 	// ---------------------------------------------------------
 	// YouTube Player
-	//
-	// autoplay=1  → automatically starts
-	// mute=1      → always muted
-	// controls=0  → hide controls
-	// loop=1      → loop video
-	//
 	// ---------------------------------------------------------
 
 	const embedUrl =
@@ -466,13 +449,9 @@ export default function NewsCard({
 								alt={currentArticle.title}
 								style={{
 									width: '100%',
-
 									height: '100%',
-
 									display: 'block',
-
 									objectFit: 'cover',
-
 									objectPosition: 'center bottom',
 								}}
 							/>
@@ -481,11 +460,8 @@ export default function NewsCard({
 								src={embedUrl}
 								style={{
 									width: '100%',
-
 									height: '100%',
-
 									display: 'block',
-
 									border: 'none',
 								}}
 								allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
@@ -497,11 +473,8 @@ export default function NewsCard({
 								alt='No video found'
 								style={{
 									width: '100%',
-
 									height: '100%',
-
 									display: 'block',
-
 									objectFit: 'cover',
 								}}
 							/>
