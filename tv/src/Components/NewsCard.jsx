@@ -5,6 +5,8 @@ import { Images } from '../AppData/Images';
 export default function NewsCard({
 	style = {},
 	width = 'clamp(340px, 60vw, 1200px)',
+
+	// Fixed responsive height instead of auto
 	height = '39vw',
 	borderRadius = 'clamp(22px, 2.4vw, 40px)',
 	borderWidth = 1,
