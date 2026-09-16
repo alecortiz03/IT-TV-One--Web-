@@ -44,48 +44,16 @@ function App() {
 
 			<div className='absolute inset-0 backdrop-blur-md bg-black/30'>
 				<div style={styles.header}>
-					<DateTimeCard
-						backgroundColor='rgba(0, 0, 0, 0.58)'
-						borderColor='rgba(255, 255, 255, 0.8)'
-						borderRadius={40}
-						borderWidth={2}
-						textColor='#ffffff'
-						width='60vw'
-						height='20vh'
-					/>
+					<DateTimeCard />
 
-					<WeatherCard
-						backgroundColor='rgba(0, 0, 0, 0.58)'
-						borderColor='rgba(255, 255, 255, 0.8)'
-						borderRadius={40}
-						borderWidth={2}
-						textColor='#ffffff'
-						height='20vh'
-					/>
+					<WeatherCard />
 
-					<SpotifyPlayerCard
-						accessToken={accessToken}
-						backgroundColor='rgba(0, 0, 0, 0.58)'
-						borderColor='rgba(255, 255, 255, 0.8)'
-						borderRadius={40}
-						borderWidth={2}
-						textColor='#ffffff'
-						width='10vw'
-						height='20vh'
-					/>
+					{/*<SpotifyPlayerCard accessToken={accessToken} />*/}
 				</div>
 
 				<div style={styles.body}>
 					<div style={styles.leftSide}>
-						<HoursCard
-							backgroundColor='rgba(0, 0, 0, 0.58)'
-							borderColor='rgba(255, 255, 255, 0.8)'
-							borderRadius={40}
-							borderWidth={2}
-							textColor='#ffffff'
-							width='33vw'
-							height='20vh'
-						/>
+						<HoursCard />
 
 						<TransitCard
 							height='17vh'
@@ -93,27 +61,11 @@ function App() {
 							borderColor='#1a3464'
 						/>
 
-						<GuestWiFiCard
-							backgroundColor='rgba(0, 0, 0, 0.58)'
-							borderColor='rgba(255, 255, 255, 0.8)'
-							borderRadius={40}
-							borderWidth={2}
-							textColor='#ffffff'
-							width='33vw'
-							height='20vh'
-						/>
+						<GuestWiFiCard />
 					</div>
 
 					<div style={styles.rightSide}>
-						<NewsCard
-							backgroundColor='rgba(0, 0, 0, 0.58)'
-							borderColor='rgba(255, 255, 255, 0.8)'
-							borderRadius={40}
-							borderWidth={2}
-							textColor='#ffffff'
-							width='60vw'
-							height='70vh'
-						/>
+						<NewsCard />
 					</div>
 				</div>
 			</div>

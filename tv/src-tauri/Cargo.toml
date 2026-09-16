@@ -25,14 +25,13 @@ tauri-plugin-log = "2"
 reqwest = { version = "0.13.3", features = ["json"] }
 scraper = "0.24"
 tauri-plugin-deep-link = "2.4.9"
-axum = "0.7"
-tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.5", features = ["cors"] }
+tower-http = { version = "0.5.2", features = ["fs", "cors"] }
 uuid = { version = "1", features = ["v4"] }
 rand = "0.8"
 urlencoding = "2.1"
 tauri-plugin-process = "2"
-
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
 
 
 

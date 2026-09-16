@@ -1,100 +1,113 @@
-export default function HoursCard({
-	style = {},
-	width = 'clamp(260px, 32vw, 450px)',
-	height = 'auto',
-	borderRadius = 'clamp(12px, 2vw, 20px)',
-	borderWidth = 'clamp(1px, 0.2vw, 2px)',
-	borderColor = '#000000',
-	backgroundColor = '#ffffff',
-	textColor = '#ffffff',
-}) {
+import { Icons } from '../AppData/Icons';
+export default function HoursCard() {
+	const width = 'clamp(320px, 33vw, 680px)';
+	const height = 'clamp(180px, 17vw, 320px)';
 	return (
 		<div
 			className='
-				select-none
-				shadow-lg
-				flex flex-col items-center
-			'
+		relative
+		flex flex-col
+		box-border
+		overflow-hidden
+
+		rounded-[clamp(22px,2.4vw,40px)]
+
+		bg-slate-950/45
+		backdrop-blur-[28px]
+
+		border border-white/15
+
+		shadow-[0_24px_70px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(255,255,255,0.04)]
+
+		py-[clamp(10px,1vw,20px)]
+	'
 			style={{
 				width,
 				height,
-				minWidth: 0,
-				minHeight: 'clamp(140px, 14vw, 260px)',
-				padding: 'clamp(8px, 1.2vw, 20px)',
-				borderRadius,
-				borderWidth,
-				borderColor,
-				backgroundColor,
-				borderStyle: 'solid',
-				boxSizing: 'border-box',
-				...style,
 			}}>
-			<div className='flex flex-col justify-center items-center w-full'>
-				<h2
-					className='font-bold text-center w-full'
-					style={{
-						color: textColor,
-						fontSize: 'clamp(14px, 2vw, 28px)',
-						lineHeight: 1.1,
-						margin: 0,
-						textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
-					}}>
-					IT Support Hours
-				</h2>
-
-				<hr
-					className='border-white'
-					style={{
-						width: '60%',
-						marginTop: 'clamp(4px, 0.5vw, 10px)',
-						borderTopWidth: 'clamp(1px, 0.15vw, 2px)',
-					}}
-				/>
+			<div
+				className='
+		pointer-events-none
+		absolute
+		-inset-[30%]
+		bg-[radial-gradient(circle_at_25%_15%,rgba(255,255,255,0.22),transparent_32%)]
+	'
+			/>
+			<div
+				className='
+		pointer-events-none
+		absolute
+		top-0
+		left-[8%]
+		right-[8%]
+		h-px
+		bg-gradient-to-r
+		from-transparent
+		via-white/35
+		to-transparent
+	'
+			/>
+			{/* Header */}
+			<div
+				className='
+	flex flex-row items-center
+	w-full
+	flex-1
+	gap-[clamp(10px,1.5vw,24px)]
+'>
+				{' '}
+				{/* Clock Logo */}
+				<div
+					className='flex justify-center items-center bbg-white/[0.08]
+border border-white/15
+backdrop-blur-xl
+shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] w-1/9 aspect-square rounded-full ml-[clamp(10px,1.5vw,28px)]'>
+					<img
+						src={Icons.Clock}
+						alt='Clock'
+						className='w-8/9 aspect-square object-contain'
+					/>
+				</div>
+				<p className='text-[clamp(18px,2vw,36px)] font-medium	tracking-[-0.02em] text-white/90'>
+					IT Hours
+				</p>
 			</div>
 
+			{/* Body */}
 			<div
-				className='flex flex-col justify-evenly items-center w-full'
-				style={{
-					gap: 'clamp(4px, 0.7vw, 12px)',
-					marginTop: 'clamp(8px, 1vw, 18px)',
-					paddingLeft: 'clamp(4px, 1vw, 12px)',
-					paddingRight: 'clamp(4px, 1vw, 12px)',
-				}}>
-				<p
-					className='font-bold text-center'
-					style={{
-						color: textColor,
-						fontSize: 'clamp(9px, 1.45vw, 23px)',
-						lineHeight: 1.15,
-						margin: 0,
-						textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
-					}}>
-					Monday - Friday: 8:00 AM - 7:00 PM
-				</p>
+				className='
+	w-full
+	flex-[2]
+	flex flex-col
+	justify-evenly
+'>
+				{' '}
+				<div className='flex flex-row justify-between items-center px-[clamp(10px,1.5vw,24px)] pt-[clamp(10px,1.4vw,28px)]'>
+					<p className='text-[clamp(12px,1.3vw,26px)] text-white/65 font-light tracking-wide'>
+						Monday - Friday
+					</p>
 
-				<p
-					className='font-bold text-center'
-					style={{
-						color: textColor,
-						fontSize: 'clamp(9px, 1.45vw, 23px)',
-						lineHeight: 1.15,
-						margin: 0,
-						textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
-					}}>
-					Saturday: 9:00 AM - 5:00 PM
-				</p>
+					<p className='text-[clamp(12px,1.3vw,26px)] text-white/90 font-medium tracking-wide'>
+						7 AM - 9 PM
+					</p>
+				</div>
+				<div
+					className='w-3/4 h-px bg-white/10'
+					style={{ margin: '0 auto' }}
+				/>
+				<div className='flex flex-row justify-between items-center px-[clamp(10px,1.5vw,24px)] pt-[clamp(8px,1.2vw,24px)]'>
+					<p className='text-[clamp(12px,1.3vw,26px)] text-white/65 font-light tracking-wide'>
+						Saturday - Sunday
+					</p>
 
-				<p
-					className='font-bold text-center'
-					style={{
-						color: textColor,
-						fontSize: 'clamp(9px, 1.45vw, 23px)',
-						lineHeight: 1.15,
-						margin: 0,
-						textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
-					}}>
-					Sunday: Closed
-				</p>
+					<p className='text-[clamp(12px,1.3vw,26px)] text-white/90 font-medium tracking-wide'>
+						9 AM - 5 PM
+					</p>
+				</div>
+				<div
+					className='w-3/4 h-px bg-white/10'
+					style={{ margin: '0 auto' }}
+				/>
 			</div>
 		</div>
 	);

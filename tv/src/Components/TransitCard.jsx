@@ -118,11 +118,11 @@ export default function TransitCard({
 	style = {},
 	width = 'clamp(260px, 30vw, 520px)',
 	height = 'auto',
-	backgroundColor = 'rgba(0,0,0,0.58)',
-	borderColor = 'rgba(255,255,255,0.8)',
-	textColor = '#ffffff',
-	borderRadius = 'clamp(18px, 3vw, 40px)',
-	borderWidth = 'clamp(1px, 0.25vw, 2px)',
+	backgroundColor = 'rgba(15, 23, 42, 0.45)',
+	borderColor = 'rgba(255,255,255,0.15)',
+	textColor = 'rgba(255,255,255,0.9)',
+	borderRadius = 'clamp(22px, 2.4vw, 40px)',
+	borderWidth = 1,
 }) {
 	const [items, setItems] = useState([]);
 	const [index, setIndex] = useState(0);
@@ -134,10 +134,25 @@ export default function TransitCard({
 	useEffect(() => {
 		async function loadTransit() {
 			try {
-				const bytes = await invoke('fetch_transit_trip_updates');
+				let bytes;
+
+				try {
+					// Tauri build
+					bytes = await invoke('fetch_transit_trip_updates');
+				} catch {
+					// Browser / Rust server build
+					const response = await fetch('/api/transit-trip-updates');
+
+					if (!response.ok) {
+						throw new Error(`Transit request failed: ${response.status}`);
+					}
+
+					const buffer = await response.arrayBuffer();
+					bytes = new Uint8Array(buffer);
+				}
 
 				const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
-					new Uint8Array(bytes),
+					bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes),
 				);
 
 				const now = Math.floor(Date.now() / 1000);
@@ -189,12 +204,16 @@ export default function TransitCard({
 				}
 
 				arrivals.sort((a, b) => {
-					if (a.minutes !== b.minutes) return a.minutes - b.minutes;
+					if (a.minutes !== b.minutes) {
+						return a.minutes - b.minutes;
+					}
+
 					return a.distance - b.distance;
 				});
 
 				setItems(arrivals.slice(0, 30));
 				setIndex(0);
+
 				setMessage(arrivals.length ? '' : 'No nearby transit found');
 			} catch (error) {
 				console.log('Transit error:', error);
@@ -223,24 +242,95 @@ export default function TransitCard({
 
 	return (
 		<div
-			className='select-none overflow-hidden shadow-lg flex flex-col items-center justify-center'
+			className='
+				relative
+				select-none
+				overflow-hidden
+				box-border
+
+				flex
+				flex-col
+				items-center
+				justify-center
+
+				bg-slate-950/45
+				backdrop-blur-[28px]
+
+				border
+				border-white/15
+
+				shadow-[0_24px_70px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(255,255,255,0.04)]
+			'
 			style={{
 				width,
 				height,
+
 				minWidth: 0,
+
 				minHeight: height === 'auto' ? 'clamp(160px, 18vh, 320px)' : undefined,
+
 				padding: 'clamp(10px, 1.4vw, 24px)',
+
 				backgroundColor,
 				borderColor,
 				borderRadius,
 				borderWidth,
 				borderStyle: 'solid',
+
 				boxSizing: 'border-box',
+
 				...style,
 			}}>
+			{/* Soft glass highlight */}
+			<div
+				className='
+					pointer-events-none
+					absolute
+					-inset-[30%]
+					bg-[radial-gradient(circle_at_25%_15%,rgba(255,255,255,0.22),transparent_32%)]
+				'
+			/>
+
+			{/* Top specular highlight */}
+			<div
+				className='
+					pointer-events-none
+					absolute
+					top-0
+					left-[8%]
+					right-[8%]
+					h-px
+					bg-gradient-to-r
+					from-transparent
+					via-white/35
+					to-transparent
+				'
+			/>
+
+			{/* Subtle inner glow */}
+			<div
+				className='
+					pointer-events-none
+					absolute
+					inset-0
+					rounded-[inherit]
+					shadow-[inset_0_0_30px_rgba(255,255,255,0.03)]
+				'
+			/>
+
 			{current ?
 				<div
-					className='flex flex-col items-center justify-center text-center transition-all duration-500'
+					className='
+						relative
+						z-10
+						flex
+						flex-col
+						items-center
+						justify-center
+						text-center
+						transition-all
+						duration-500
+					'
 					style={styles.contentBox}>
 					<div style={styles.routeRow}>
 						<div style={styles.iconCircle}>
@@ -273,13 +363,19 @@ export default function TransitCard({
 					</div>
 
 					<p
-						className='truncate pb-1.5'
+						className='truncate pb-6'
 						style={styles.distanceText(textColor)}>
 						{current.distance.toFixed(1)} km away
 					</p>
 				</div>
 			:	<p
-					className='font-bold text-center'
+					className='
+						relative
+						z-10
+						font-medium
+						text-center
+						tracking-[-0.02em]
+					'
 					style={styles.message(textColor)}>
 					{message}
 				</p>
@@ -294,7 +390,13 @@ const styles = {
 		height: '100%',
 		gap: 'clamp(8px, 1vw, 18px)',
 		boxSizing: 'border-box',
-		overflow: 'hidden',
+
+		// Allow circle and content to render without being clipped
+		overflow: 'visible',
+
+		// Balanced breathing room on top and bottom
+		paddingTop: 'clamp(4px, 0.4vw, 8px)',
+		paddingBottom: 'clamp(8px, 0.8vw, 16px)',
 	},
 
 	routeRow: {
@@ -303,20 +405,38 @@ const styles = {
 		alignItems: 'center',
 		justifyContent: 'center',
 		gap: 'clamp(6px, 0.9vw, 14px)',
-		overflow: 'hidden',
+
+		// Don't clip the icon circle
+		overflow: 'visible',
+
+		paddingTop: 'clamp(4px, 0.4vw, 8px)',
+		boxSizing: 'border-box',
 	},
 
 	iconCircle: {
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'center',
+
 		padding: 'clamp(5px, 0.6vw, 10px)',
-		backgroundColor: 'rgba(255, 255, 255, 0.2)',
-		borderRadius: '9999px',
+
+		backgroundColor: 'rgba(255,255,255,0.08)',
+
+		border: '1px solid rgba(255,255,255,0.15)',
+
+		// Guaranteed perfect circle
+		borderRadius: '50%',
+
 		width: 'clamp(30px, 3vw, 58px)',
 		height: 'clamp(30px, 3vw, 58px)',
-		boxShadow: '0 0 10px #1a3464',
+		aspectRatio: '1 / 1',
+
+		boxShadow:
+			'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 24px rgba(0,0,0,0.25)',
+
 		boxSizing: 'border-box',
+
+		// Prevent flex from squishing the circle
 		flexShrink: 0,
 	},
 
@@ -325,93 +445,120 @@ const styles = {
 		height: '100%',
 		objectFit: 'contain',
 		filter: 'invert(100%) sepia(100%) grayscale(100%)',
+		opacity: 0.9,
 	},
 
 	routeNumber: {
-		color: '#1a3464',
+		color: 'rgba(255,255,255,0.95)',
+
 		fontSize: 'clamp(18px, 2vw, 36px)',
-		fontWeight: '900',
+
+		fontWeight: '600',
+
 		lineHeight: 1,
+
 		margin: 0,
+
 		flexShrink: 0,
-		textShadow: `
-			-2px -2px 0 #ffffff,
-			 2px -2px 0 #ffffff,
-			-2px  2px 0 #ffffff,
-			 2px  2px 0 #ffffff,
-			 0px -2px 0 #ffffff,
-			 0px  2px 0 #ffffff,
-			-2px  0px 0 #ffffff,
-			 2px  0px 0 #ffffff
-		`,
+
+		letterSpacing: '-0.02em',
 	},
 
 	routeName: (color) => ({
 		color,
-		fontSize: 'clamp(9px, 0.85vw, 17px)',
-		fontWeight: '800',
+
+		fontSize: 'clamp(10px, 0.9vw, 18px)',
+
+		fontWeight: '500',
+
 		lineHeight: 1.1,
+
 		margin: 0,
+
 		maxWidth: '65%',
-		opacity: 0.95,
-		textShadow: `
-			-1px -1px 0 #1a3464,
-			 1px -1px 0 #1a3464,
-			-1px  1px 0 #1a3464,
-			 1px  1px 0 #1a3464,
-			 0px  0px 5px rgba(0,0,0,0.75)
-		`,
+
+		opacity: 0.75,
+
+		letterSpacing: '-0.01em',
 	}),
 
 	stopRow: {
 		width: '100%',
+
 		display: 'flex',
+
 		alignItems: 'center',
+
 		justifyContent: 'center',
+
 		gap: 'clamp(4px, 0.5vw, 8px)',
-		padding: 'clamp(2px, 0.4vw, 8px)',
+
 		boxSizing: 'border-box',
-		overflow: 'hidden',
 	},
 
 	stopText: (color) => ({
 		color,
-		fontSize: 'clamp(10px, 1vw, 20px)',
-		fontWeight: '800',
+
+		fontSize: 'clamp(11px, 1vw, 20px)',
+
+		fontWeight: '500',
+
 		lineHeight: 1.1,
+
 		margin: 0,
+
 		maxWidth: '70%',
+
 		opacity: 0.7,
-		textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
 	}),
 
 	minutesText: (color) => ({
 		color,
-		fontSize: 'clamp(10px, 1vw, 20px)',
-		fontWeight: '800',
+
+		fontSize: 'clamp(11px, 1vw, 20px)',
+
+		fontWeight: '500',
+
 		lineHeight: 1.1,
+
 		margin: 0,
+
 		flexShrink: 0,
-		opacity: 0.7,
-		textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
+
+		opacity: 0.9,
 	}),
 
 	distanceText: (color) => ({
 		color,
-		fontSize: 'clamp(8px, 0.8vw, 15px)',
-		fontWeight: '800',
-		lineHeight: 1.1,
+
+		fontSize: 'clamp(9px, 0.8vw, 15px)',
+
+		fontWeight: '400',
+
+		// Slightly more vertical space so letters aren't clipped
+		lineHeight: 1.2,
+
 		maxWidth: '90%',
-		opacity: 0.65,
-		textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
+
+		opacity: 0.55,
+
+		margin: 0,
+
+		// Keep the km line away from the bottom edge
+		marginBottom: 'clamp(4px, 0.4vw, 8px)',
 	}),
 
 	message: (color) => ({
 		color,
-		fontSize: 'clamp(11px, 1vw, 20px)',
-		fontWeight: '800',
+
+		fontSize: 'clamp(14px, 1.2vw, 22px)',
+
+		fontWeight: '500',
+
 		lineHeight: 1.15,
+
 		margin: 0,
-		textShadow: '1px 1px 2px rgba(0,0,0,0.75)',
+
+		opacity: 0.75,
 	}),
 };
